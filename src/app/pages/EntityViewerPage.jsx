@@ -37,6 +37,9 @@ export function EntityViewerPage() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [annotations, setAnnotations] = useState([])
   const [layers, setLayers] = useState([])
+  const [loadingEvento, setLoadingEvento] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
   const [error, setError] = useState('')
   const [addingComment, setAddingComment] = useState(false)
   const [commentModal, setCommentModal] = useState(null)
@@ -45,8 +48,22 @@ export function EntityViewerPage() {
   const [cursorMode, setCursorMode] = useState(null)
 
   useEffect(() => {
-    fetchEventoById(entityId).then(setEvento).catch(() => setEvento(null))
+    setLoadingEvento(true)
+    setLoadError(null)
+    fetchEventoById(entityId)
+      .then(setEvento)
+      .catch((err) => {
+        setEvento(null)
+        setLoadError(err.message || 'Entidad no encontrada')
+      })
+      .finally(() => setLoadingEvento(false))
   }, [entityId])
+
+  useEffect(() => {
+    document.title = evento?.titulo
+      ? `${evento.titulo} · Archivo Atlas`
+      : 'Archivo Atlas'
+  }, [evento])
 
   const refreshAnnotations = useCallback(() => {
     if (!entityId) return
@@ -187,13 +204,22 @@ export function EntityViewerPage() {
   const hasViewableModel = !!fileUrl || showDemoCube
   const modelClickHandler = addingComment ? handlePlaceComment : undefined
 
+  if (loadError) {
+    return (
+      <div className="entity-viewer entity-viewer--error">
+        <p className="viewer-error">{loadError}</p>
+        <Link to="/" className="entity-viewer__back">← Volver al mapa</Link>
+      </div>
+    )
+  }
+
   return (
     <div className="entity-viewer">
       <header className="entity-viewer__header">
         <Link to="/" className="entity-viewer__back">← Volver al mapa</Link>
         <div className="entity-viewer__title">
-          <h1>{evento?.titulo || `Entidad ${entityId}`}</h1>
-          {evento?.lugar && <p>{evento.lugar}</p>}
+          <h1>{loadingEvento ? 'Cargando entidad…' : (evento?.titulo || `Entidad ${entityId}`)}</h1>
+          {!loadingEvento && evento?.lugar && <p>{evento.lugar}</p>}
         </div>
         <div className="entity-viewer__auth">
           {isAuthenticated ? (
@@ -214,9 +240,14 @@ export function EntityViewerPage() {
               </p>
             )}
             <div
-              className="dropzone"
-              onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
-              onDragOver={(e) => e.preventDefault()}
+              className={`dropzone${isDraggingOver ? ' dropzone--active' : ''}`}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDraggingOver(false)
+                handleFiles(e.dataTransfer.files)
+              }}
+              onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true) }}
+              onDragLeave={() => setIsDraggingOver(false)}
             >
               <p>Arrastra un .3dm aquí</p>
               <label className="btn-file">
@@ -258,6 +289,7 @@ export function EntityViewerPage() {
 
         <div className={`entity-viewer__canvas ${cursorClass}`}>
           <Canvas
+            aria-label={`Modelo 3D de ${evento?.titulo || 'entidad'}`}
             camera={{ position: [2.5, 2.5, 2.5], fov: 50 }}
             gl={{ antialias: true, alpha: false }}
             style={{ background: '#0d1117' }}
@@ -268,7 +300,12 @@ export function EntityViewerPage() {
             <directionalLight position={[-3, 2, -4]} intensity={0.35} />
             <OrbitControls makeDefault />
             <ViewerCursorController onCursorModeChange={setCursorMode} />
-            {fileUrl ? (
+            {loadingEvento ? (
+              <mesh>
+                <boxGeometry args={[0.3, 0.3, 0.3]} />
+                <meshStandardMaterial color="#484f58" wireframe />
+              </mesh>
+            ) : fileUrl ? (
               <>
                 <RhinoModel
                   fileUrl={fileUrl}

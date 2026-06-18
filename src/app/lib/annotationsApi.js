@@ -7,7 +7,7 @@ export const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
 export const MAX_UPLOAD_SIZE_MB = 50
 
 export async function upsertMyProfile(userId, displayName) {
-  if (!isSupabaseConfigured || !userId) return
+  if (!supabase || !userId) return
   const { error } = await supabase.from('profiles').upsert(
     { id: userId, display_name: displayName || null, updated_at: new Date().toISOString() },
     { onConflict: 'id' },
@@ -16,7 +16,7 @@ export async function upsertMyProfile(userId, displayName) {
 }
 
 async function getProfilesByIds(ids) {
-  if (!isSupabaseConfigured || !ids?.length) return []
+  if (!supabase || !ids?.length) return []
   const { data, error } = await supabase
     .from('profiles')
     .select('id, display_name')
@@ -29,6 +29,7 @@ export async function getAnnotationsWithAuthors(entityId) {
   if (!isSupabaseConfigured) {
     return mockGetAnnotations(entityId)
   }
+  if (!supabase) return []
 
   const { data: rows, error } = await supabase
     .from('entity_annotations')
@@ -68,6 +69,7 @@ export async function addSpatialComment(entityId, userId, position, body, modelI
       display_name: 'Usuario local',
     })
   }
+  if (!supabase) throw new Error('Supabase no configurado')
 
   const { data, error } = await supabase
     .from('entity_annotations')
@@ -94,6 +96,7 @@ export async function addTextNote(entityId, userId, body) {
       display_name: 'Usuario local',
     })
   }
+  if (!supabase) throw new Error('Supabase no configurado')
 
   const { data, error } = await supabase
     .from('entity_annotations')
@@ -119,6 +122,7 @@ export async function uploadEntityFile(entityId, file, userId) {
       file_path: URL.createObjectURL(file),
     })
   }
+  if (!supabase) throw new Error('Supabase no configurado')
 
   const ext = file.name.slice(file.name.lastIndexOf('.'))
   const path = `${entityId}/${userId}/${crypto.randomUUID()}${ext}`
@@ -147,6 +151,7 @@ export async function uploadEntityFile(entityId, file, userId) {
 
 export async function getFileSignedUrl(filePath) {
   if (!isSupabaseConfigured || filePath.startsWith('blob:')) return filePath
+  if (!supabase) return filePath
   const { data, error } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(filePath, 60 * 60)

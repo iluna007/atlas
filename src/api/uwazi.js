@@ -12,6 +12,37 @@
 
 const UWAZI_URL = import.meta.env.VITE_UWAZI_URL || 'mock'
 const UWAZI_TOKEN = import.meta.env.VITE_UWAZI_TOKEN || ''
+const TEMPLATE_EVENTO = import.meta.env.VITE_UWAZI_TEMPLATE_EVENTO || 'evento'
+
+function uwaziHeaders() {
+  return {
+    Authorization: `Bearer ${UWAZI_TOKEN}`,
+    'Content-Type': 'application/json',
+  }
+}
+
+/** Normaliza una entidad de Uwazi al schema interno del atlas */
+export function mapUwaziEntity(e) {
+  const coords = e.metadata?.coordenadas?.[0]?.value
+  return {
+    id: e.sharedId || e._id,
+    titulo: e.title,
+    tipo: e.metadata?.tipo_evento?.[0]?.value || 'otro',
+    fecha: e.metadata?.fecha?.[0]?.value?.split('T')[0] || '',
+    coordenadas: coords
+      ? { lon: coords.lon ?? coords[0], lat: coords.lat ?? coords[1] }
+      : null,
+    lugar: e.metadata?.lugar?.[0]?.label || e.metadata?.lugar?.[0]?.value || '',
+    certeza: e.metadata?.certeza?.[0]?.value || 'preliminar',
+    descripcion: e.metadata?.descripcion?.[0]?.value || '',
+    personas: (e.metadata?.personas || []).map(p => p.value),
+    documentos: (e.metadata?.documentos || []).map(d => d.value),
+    caso: e.metadata?.caso?.[0]?.value || null,
+    grupo: e.metadata?.grupo?.[0]?.value || e.metadata?.grupo?.[0]?.label || '',
+    acceso: e.metadata?.acceso?.[0]?.value || 'restringido',
+    modelo3d: false,
+  }
+}
 
 // ─── Tipos de evento — ajusta según tu taxonomía en Uwazi ───────────────────
 export const TIPOS_EVENTO = {
@@ -229,49 +260,63 @@ const MOCK_RELACIONES = generarMockRelaciones(MOCK_EVENTOS)
 // ─── Funciones de acceso a datos ─────────────────────────────────────────────
 
 /** Obtiene todos los eventos (mock o API real) */
-export async function fetchEventos() {
+export async function fetchEventos({ page = 0, limit = 200 } = {}) {
   if (UWAZI_URL === 'mock') return MOCK_EVENTOS
 
-  const res = await fetch(`${UWAZI_URL}/api/search?types[]=evento&limit=200`, {
-    headers: {
-      'Authorization': `Bearer ${UWAZI_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-  })
+  const res = await fetch(
+    `${UWAZI_URL}/api/search?types[]=${encodeURIComponent(TEMPLATE_EVENTO)}&page=${page}&limit=${limit}`,
+    { headers: uwaziHeaders() },
+  )
   if (!res.ok) throw new Error(`Uwazi API error: ${res.status}`)
   const data = await res.json()
 
-  // Mapea la respuesta real de Uwazi al formato interno
-  return data.rows.map(e => ({
-    id: e._id,
-    titulo: e.title,
-    tipo: e.metadata?.tipo_evento?.[0]?.value || 'otro',
-    fecha: e.metadata?.fecha?.[0]?.value?.split('T')[0] || '',
-    coordenadas: e.metadata?.coordenadas?.[0]?.value || null,
-    lugar: e.metadata?.lugar?.[0]?.label || '',
-    certeza: e.metadata?.certeza?.[0]?.value || 'preliminar',
-    descripcion: e.metadata?.descripcion?.[0]?.value || '',
-    personas: (e.metadata?.personas || []).map(p => p.value),
-    documentos: (e.metadata?.documentos || []).map(d => d.value),
-    caso: e.metadata?.caso?.[0]?.value || null,
-    grupo: e.metadata?.grupo?.[0]?.value || '',
-    acceso: e.metadata?.acceso?.[0]?.value || 'restringido',
-  })).filter(e => e.coordenadas)
+  return (data.rows || [])
+    .map(mapUwaziEntity)
+    .filter(e => e.coordenadas)
 }
 
 /** Obtiene un evento por id (mock o API real) */
 export async function fetchEventoById(id) {
-  const eventos = await fetchEventos()
-  const evento = eventos.find(e => e.id === id)
-  if (!evento) throw new Error(`Entidad no encontrada: ${id}`)
-  return evento
+  if (UWAZI_URL === 'mock') {
+    const evento = MOCK_EVENTOS.find(e => e.id === id)
+    if (!evento) throw new Error(`Entidad no encontrada: ${id}`)
+    return evento
+  }
+
+  const res = await fetch(
+    `${UWAZI_URL}/api/entities?sharedId=${encodeURIComponent(id)}`,
+    { headers: uwaziHeaders() },
+  )
+  if (!res.ok) throw new Error(`Uwazi API error: ${res.status}`)
+  const data = await res.json()
+  const entity = data.rows?.[0] || data.entity
+  if (!entity) throw new Error(`Entidad no encontrada: ${id}`)
+  const mapped = mapUwaziEntity(entity)
+  if (!mapped.coordenadas) throw new Error(`Entidad sin coordenadas: ${id}`)
+  return mapped
 }
 
 /** Obtiene relaciones entre eventos */
 export async function fetchRelaciones() {
   if (UWAZI_URL === 'mock') return MOCK_RELACIONES
-  // Implementar cuando tengas API real
-  return []
+
+  const res = await fetch(
+    `${UWAZI_URL}/api/search?types[]=${encodeURIComponent(TEMPLATE_EVENTO)}&includeConnections=true&limit=500`,
+    { headers: uwaziHeaders() },
+  )
+  if (!res.ok) throw new Error(`Uwazi API error: ${res.status}`)
+  const data = await res.json()
+
+  return (data.rows || [])
+    .flatMap(e =>
+      (e.connections || []).map(c => ({
+        origen: e.sharedId || e._id,
+        destino: c.entity,
+        tipo: c.template || 'relacion',
+        label: c.template || 'vinculado a',
+      })),
+    )
+    .filter(r => r.origen && r.destino && r.origen !== r.destino)
 }
 
 /** Devuelve color RGBA para un tipo de evento */

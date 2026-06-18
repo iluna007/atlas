@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s)
       setUser(s?.user ?? null)
@@ -31,12 +36,14 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signInWithEmail = async (email, password) => {
+    if (!supabase) throw new Error('Supabase no configurado')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     return data
   }
 
   const signUpWithEmail = async (email, password, options = {}) => {
+    if (!supabase) throw new Error('Supabase no configurado')
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -47,13 +54,14 @@ export function AuthProvider({ children }) {
   }
 
   const signInWithGoogle = async () => {
+    if (!supabase) throw new Error('Supabase no configurado')
     const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
     if (error) throw error
     return data
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    if (supabase) await supabase.auth.signOut()
   }
 
   return (

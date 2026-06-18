@@ -24,6 +24,8 @@ export async function uploadEntityModel(file, entityId, userId) {
     })
   }
 
+  if (!supabase) throw new Error('Supabase no configurado')
+
   const ext = file.name.slice(file.name.lastIndexOf('.'))
   const path = `${entityId}/${userId}/${crypto.randomUUID()}${ext}`
 
@@ -53,6 +55,7 @@ export async function getEntityModels(entityId) {
     const { mockGetModels } = await import('./mockStorage')
     return mockGetModels(entityId)
   }
+  if (!supabase) return []
 
   const { data, error } = await supabase
     .from('entity_models')
@@ -64,7 +67,13 @@ export async function getEntityModels(entityId) {
   return data || []
 }
 
+export async function entityHasModel3d(entityId) {
+  const models = await getEntityModels(entityId)
+  return models.length > 0
+}
+
 export async function getModelFileSignedUrl(storagePath) {
+  if (!supabase) throw new Error('Supabase no configurado')
   const { data, error } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(storagePath, 60 * 60)

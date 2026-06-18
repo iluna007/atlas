@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'archivo-atlas-annotations'
+const MAX_ANNOTATIONS_PER_ENTITY = 200
 
 function readAll() {
   try {
@@ -9,7 +10,13 @@ function readAll() {
 }
 
 function writeAll(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch (err) {
+    if (err?.name === 'QuotaExceededError') {
+      console.warn('localStorage lleno — no se guardó la anotación')
+    }
+  }
 }
 
 export function mockGetAnnotations(entityId) {
@@ -29,7 +36,8 @@ export function mockAddAnnotation(entityId, annotation) {
     user_id: annotation.user_id || 'local-user',
     ...annotation,
   }
-  all[entityId] = [...(all[entityId] || []), row]
+  const list = [...(all[entityId] || []), row]
+  all[entityId] = list.slice(-MAX_ANNOTATIONS_PER_ENTITY)
   writeAll(all)
   return row
 }
@@ -47,6 +55,12 @@ export function mockSaveModelMeta(entityId, meta) {
   const key = `archivo-atlas-models-${entityId}`
   const list = mockGetModels(entityId)
   list.unshift(meta)
-  localStorage.setItem(key, JSON.stringify(list.slice(0, 5)))
+  try {
+    localStorage.setItem(key, JSON.stringify(list.slice(0, 5)))
+  } catch (err) {
+    if (err?.name === 'QuotaExceededError') {
+      console.warn('localStorage lleno — no se guardó el modelo')
+    }
+  }
   return meta
 }

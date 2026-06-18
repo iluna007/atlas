@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { Rhino3dmLoader } from 'three/addons/loaders/3DMLoader.js'
+import { RHINO3DM_CDN } from '../lib/constants.js'
 
 export function RhinoModel({ fileUrl, layerVisibility, onLayersReady, onModelClick }) {
   const [object, setObject] = useState(null)
@@ -10,7 +11,7 @@ export function RhinoModel({ fileUrl, layerVisibility, onLayersReady, onModelCli
     if (!fileUrl) return
 
     const loader = new Rhino3dmLoader()
-    loader.setLibraryPath('https://unpkg.com/rhino3dm@8.0.1/')
+    loader.setLibraryPath(RHINO3DM_CDN)
 
     loader.load(
       fileUrl,

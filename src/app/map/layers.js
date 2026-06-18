@@ -1,18 +1,18 @@
 /**
- * layers.js
- * Definición de capas Deck.gl para el mapa.
- * Cada función devuelve una instancia de capa lista para usar con MapboxOverlay.
+ * Capas Deck.gl para el mapa
  */
 
 import { ScatterplotLayer, ArcLayer, TextLayer } from '@deck.gl/layers'
-import { colorPorTipo } from '../api/uwazi.js'
+import { colorPorTipo } from '../../api/uwazi.js'
 
-/**
- * Capa principal de eventos — círculos coloreados por tipo
- */
-export function crearCapaEventos({ eventos, onHover, onClick, hoverId, filterKey = '' }) {
-  return new ScatterplotLayer({
-    id: 'eventos',
+function radiusBase(d) {
+  if (d.demo3d) return 750
+  return 600
+}
+
+export function crearCapasEventos({ eventos, onHover, onClick, hoverId, filterKey = '' }) {
+  const base = new ScatterplotLayer({
+    id: 'eventos-base',
     data: eventos,
     pickable: true,
     opacity: 0.9,
@@ -21,45 +21,60 @@ export function crearCapaEventos({ eventos, onHover, onClick, hoverId, filterKey
     radiusMinPixels: 5,
     radiusMaxPixels: 18,
     lineWidthMinPixels: 1,
-
     getPosition: d => [d.coordenadas.lon, d.coordenadas.lat],
-    getRadius: d => {
-      if (d.id === hoverId) return 900
-      if (d.demo3d) return 750
-      return 600
-    },
-    getFillColor: d => colorPorTipo(d.tipo, d.id === hoverId ? 255 : 210),
+    getRadius: radiusBase,
+    getFillColor: d => colorPorTipo(d.tipo, 210),
     getLineColor: d => colorPorTipo(d.tipo, 255),
-    getLineWidth: d => d.id === hoverId ? 2 : 0.5,
-
+    getLineWidth: 0.5,
     onHover,
     onClick: ({ object }) => object && onClick(object),
-
     updateTriggers: {
       getPosition: filterKey,
-      getRadius: [hoverId, filterKey],
-      getFillColor: [hoverId, filterKey],
+      getRadius: filterKey,
+      getFillColor: filterKey,
       getLineColor: filterKey,
-      getLineWidth: hoverId,
     },
   })
+
+  const hovered = hoverId ? eventos.filter(d => d.id === hoverId) : []
+  const highlight = hovered.length
+    ? new ScatterplotLayer({
+        id: 'eventos-highlight',
+        data: hovered,
+        pickable: false,
+        opacity: 1,
+        stroked: true,
+        filled: true,
+        radiusMinPixels: 5,
+        radiusMaxPixels: 22,
+        lineWidthMinPixels: 2,
+        getPosition: d => [d.coordenadas.lon, d.coordenadas.lat],
+        getRadius: () => 900,
+        getFillColor: d => colorPorTipo(d.tipo, 255),
+        getLineColor: d => colorPorTipo(d.tipo, 255),
+        getLineWidth: 2,
+        updateTriggers: {
+          getFillColor: hoverId,
+          getLineColor: hoverId,
+        },
+      })
+    : null
+
+  return highlight ? [base, highlight] : [base]
 }
 
-/**
- * Capa de relaciones — arcos entre eventos conectados
- */
 export function crearCapaRelaciones({ relaciones, eventosMap, idsVisibles, visible }) {
   if (!visible || !relaciones.length) return null
 
   const arcos = relaciones
     .filter(r => idsVisibles?.has(r.origen) && idsVisibles?.has(r.destino))
     .map(r => {
-      const origen  = eventosMap.get(r.origen)
+      const origen = eventosMap.get(r.origen)
       const destino = eventosMap.get(r.destino)
       if (!origen?.coordenadas || !destino?.coordenadas) return null
       return {
         ...r,
-        sourcePosition: [origen.coordenadas.lon,  origen.coordenadas.lat],
+        sourcePosition: [origen.coordenadas.lon, origen.coordenadas.lat],
         targetPosition: [destino.coordenadas.lon, destino.coordenadas.lat],
       }
     })
@@ -78,9 +93,6 @@ export function crearCapaRelaciones({ relaciones, eventosMap, idsVisibles, visib
   })
 }
 
-/**
- * Capa de etiquetas — nombres de lugar al hacer zoom
- */
 export function crearCapaEtiquetas({ eventos, zoom }) {
   if (zoom < 6) return null
 

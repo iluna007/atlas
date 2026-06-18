@@ -126,10 +126,39 @@
   color: #8b949e;
 }
 
+.dropzone--active {
+  border-color: var(--accent);
+  background: rgba(29, 158, 117, 0.08);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .viewer-error {
   color: #e24b4a;
   font-size: 12px;
   margin-top: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.entity-viewer--error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+}
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.loading-pulse {
+  animation: loadingPulse 1.4s ease-in-out infinite;
 }
 
 .viewer-file-name {
@@ -326,5 +355,16 @@
   }
   .viewer-panel--annotations {
     max-height: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .entity-viewer__layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .entity-viewer__canvas {
+    height: 50vh;
+    flex: none;
   }
 }
