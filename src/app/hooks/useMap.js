@@ -10,6 +10,7 @@ import {
 } from '../../api/uwazi.js'
 import { crearCapasEventos, crearCapaRelaciones, crearCapaEtiquetas } from '../map/layers.js'
 import { debounce } from '../lib/debounce.js'
+import { MAPBOX_TOKEN, MAPBOX_STYLE, isMapboxTokenConfigured } from '../lib/config.js'
 
 function conteosPorTipo(eventos) {
   const conteos = {}
@@ -109,20 +110,16 @@ export function useMap(mapContainerRef) {
       zoom: 5.5,
     }
 
-    const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN?.trim()
-    if (!mapboxToken || mapboxToken.includes('XXXXXXXX')) {
+    if (!isMapboxTokenConfigured()) {
       setLoading(false)
       setContadorText('token Mapbox no configurado')
       setConfigError('mapbox')
-      console.error(
-        'VITE_MAPBOX_TOKEN no está definido. En Netlify: Site settings → Environment variables → añade VITE_MAPBOX_TOKEN y redeploy.',
-      )
+      console.error('MAPBOX_TOKEN no válido. Revisa src/app/lib/config.js o VITE_MAPBOX_TOKEN.')
       return
     }
 
     setConfigError(null)
-
-    mapboxgl.accessToken = mapboxToken
+    mapboxgl.accessToken = MAPBOX_TOKEN
 
     function claveFiltro() {
       return `${engine.eventosFiltrados.length}:${[...engine.tiposActivos].sort().join(',')}`
@@ -221,7 +218,7 @@ export function useMap(mapContainerRef) {
 
         const map = new mapboxgl.Map({
           container,
-          style: 'mapbox://styles/ikerluna/cmmp9964u005401rzhlycalmk',
+          style: MAPBOX_STYLE,
           center: [-85.5, 12.5],
           zoom: 5.5,
           projection: 'mercator',

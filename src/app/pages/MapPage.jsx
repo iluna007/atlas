@@ -33,9 +33,8 @@ export function MapPage() {
         <div className="map-config-error" role="alert">
           <strong>Mapbox no configurado</strong>
           <p>
-            Falta la variable <code>VITE_MAPBOX_TOKEN</code> en el build.
-            En Netlify: <em>Site configuration → Environment variables</em>,
-            añade tu token <code>pk.eyJ…</code> y haz <em>Clear cache and deploy</em>.
+            Define <code>VITE_MAPBOX_TOKEN</code> en <code>.env.local</code> (local) o en
+            Netlify → <em>Environment variables</em>, y redeploy.
           </p>
           <p className="map-config-error__hint">
             En Mapbox, permite la URL <code>https://atlasnic.netlify.app</code> en las restricciones del token.
