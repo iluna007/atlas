@@ -65,6 +65,7 @@ export function useMap(mapContainerRef) {
   const [showRelaciones, setShowRelaciones] = useState(false)
   const [showEtiquetas, setShowEtiquetas] = useState(true)
   const [tooltip, setTooltip] = useState(null)
+  const [configError, setConfigError] = useState(null)
 
   const engineRef = useRef(null)
   const showRelacionesRef = useRef(showRelaciones)
@@ -112,11 +113,14 @@ export function useMap(mapContainerRef) {
     if (!mapboxToken || mapboxToken.includes('XXXXXXXX')) {
       setLoading(false)
       setContadorText('token Mapbox no configurado')
+      setConfigError('mapbox')
       console.error(
         'VITE_MAPBOX_TOKEN no está definido. En Netlify: Site settings → Environment variables → añade VITE_MAPBOX_TOKEN y redeploy.',
       )
       return
     }
+
+    setConfigError(null)
 
     mapboxgl.accessToken = mapboxToken
 
@@ -291,5 +295,6 @@ export function useMap(mapContainerRef) {
     showEtiquetas,
     setShowEtiquetas,
     tooltip,
+    configError,
   }
 }

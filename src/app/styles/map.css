@@ -603,6 +603,44 @@ html, body {
   50% { opacity: 0.4; }
 }
 
+.map-config-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  max-width: 420px;
+  padding: 20px 24px;
+  background: rgba(22, 27, 34, 0.95);
+  border: 1px solid rgba(226, 75, 74, 0.5);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.map-config-error strong {
+  display: block;
+  font-size: 15px;
+  color: #e24b4a;
+  margin-bottom: 8px;
+}
+
+.map-config-error code {
+  font-size: 12px;
+  background: var(--bg-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.map-config-error__hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
 /* ─── Mapbox overrides ────────────────────────────────────────────────────── */
 .mapboxgl-ctrl-attrib { font-size: 10px !important; }
 .mapboxgl-ctrl-logo { display: none !important; }
