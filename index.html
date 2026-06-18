@@ -5,57 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Archivo Atlas — Explorador espaciotemporal</title>
   <meta name="description" content="Plataforma de exploración espaciotemporal sobre Uwazi" />
-
-  <!-- Mapbox GL JS requiere este preconect -->
   <link rel="preconnect" href="https://events.mapbox.com" />
 </head>
 <body>
-<div id="app">
-
-  <!-- Mapa base -->
-  <div id="map"></div>
-
-  <!-- Header -->
-  <header id="header">
-    <div class="header-logo">
-      <h1>◈ Archivo <span>Atlas</span></h1>
-      <p>Explorador espaciotemporal</p>
-    </div>
-    <div id="conteo-wrap">cargando…</div>
-  </header>
-
-  <!-- Controles de capas -->
-  <div id="layer-controls">
-    <button class="layer-btn active" id="btn-etiquetas">
-      ◉ Etiquetas
-    </button>
-    <button class="layer-btn" id="btn-relaciones">
-      ⌇ Relaciones
-    </button>
-  </div>
-
-  <!-- UI inferior: timeline + leyenda -->
-  <div id="ui-bottom">
-
-    <!-- Timeline de filtro temporal -->
-    <div id="timeline-container"></div>
-
-    <!-- Leyenda / filtro por tipo -->
-    <div id="legend">
-      <div class="legend-title">Tipo de evento</div>
-      <div id="legend-items"></div>
-    </div>
-
-  </div>
-
-  <!-- Panel lateral de detalle -->
-  <div id="panel-container"></div>
-
-  <!-- Tooltip de hover -->
-  <div id="tooltip" role="tooltip"></div>
-
-</div>
-
-<script type="module" src="/src/main.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/app/main.jsx"></script>
 </body>
 </html>

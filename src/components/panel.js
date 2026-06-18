@@ -61,6 +61,11 @@ export class Panel {
             Ver en Uwazi →
           </a>
         </div>
+        <div class="panel-3d-wrap" id="panel-3d-wrap" style="display:none">
+          <a href="#" id="panel-3d-link" class="panel-3d-link">
+            Abrir escena 3D →
+          </a>
+        </div>
       </div>
     `
 
@@ -128,6 +133,15 @@ export class Panel {
       casoWrap.style.display = 'block'
     } else {
       casoWrap.style.display = 'none'
+    }
+
+    // Link escena 3D
+    const panel3dWrap = document.querySelector('#panel-3d-wrap')
+    if (evento.modelo3d) {
+      document.querySelector('#panel-3d-link').href = `/entity/${evento.id}/3d`
+      panel3dWrap.style.display = 'block'
+    } else {
+      panel3dWrap.style.display = 'none'
     }
 
     // Link a Uwazi real (si hay URL configurada)

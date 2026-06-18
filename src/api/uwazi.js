@@ -21,7 +21,8 @@ export const TIPOS_EVENTO = {
   violencia:     { label: 'Violencia física',          color: [208, 90,  48],  orden: 4 },
   represalia:    { label: 'Represalia / hostigamiento', color: [153, 53,  86],  orden: 5 },
   manifestacion: { label: 'Acción colectiva',          color: [29,  158, 117], orden: 6 },
-  otro:          { label: 'Otro',                      color: [136, 135, 128], orden: 7 },
+  arquitectura:  { label: 'Arquitectura',              color: [91,  155, 213], orden: 7 },
+  otro:          { label: 'Otro',                      color: [136, 135, 128], orden: 8 },
 }
 
 // ─── Generador mock — ~100 eventos distribuidos en Centroamérica ────────────
@@ -98,6 +99,13 @@ const TITULOS_POR_TIPO = {
     'Acción colectiva por memoria histórica',
     'Protesta estudiantil en plaza central',
   ],
+  arquitectura: [
+    'Edificio comunitario documentado',
+    'Intervención arquitectónica en espacio público',
+    'Estructura patrimonial en registro',
+    'Proyecto habitacional referenciado',
+    'Espacio construido vinculado al caso',
+  ],
   otro: [
     'Incidente documentado sin clasificación definitiva',
     'Hecho en verificación por el archivo',
@@ -122,7 +130,7 @@ function fechaAleatoria(desde = 2015, hasta = 2024) {
 }
 
 function generarMockEventos(cantidad = 100) {
-  const tipos = Object.keys(TIPOS_EVENTO)
+  const tipos = Object.keys(TIPOS_EVENTO).filter(t => t !== 'arquitectura')
   const eventos = []
 
   for (let i = 0; i < cantidad; i++) {
@@ -148,6 +156,7 @@ function generarMockEventos(cantidad = 100) {
       caso: i % 4 === 0 ? `caso-${String.fromCharCode(65 + (i % 5))}` : null,
       grupo: GRUPOS[i % GRUPOS.length],
       acceso: ACCESOS[i % ACCESOS.length],
+      modelo3d: false,
     })
   }
 
@@ -174,7 +183,47 @@ function generarMockRelaciones(eventos) {
   return relaciones
 }
 
-const MOCK_EVENTOS = generarMockEventos(100)
+/** Dos eventos de arquitectura con cubo 3D por defecto */
+const EVENTOS_ARQUITECTURA = [
+  {
+    id: 'evt-arch-managua',
+    titulo: 'Arquitectura — Mercado municipal (prototipo 3D)',
+    tipo: 'arquitectura',
+    fecha: '2022-04-10',
+    coordenadas: { lon: -86.251, lat: 12.136 },
+    lugar: 'Managua, Nicaragua',
+    certeza: 'verificado',
+    descripcion:
+      'Entidad arquitectónica en Managua con escena 3D prototipo (cubo Three.js).',
+    personas: ['pers-arch-001'],
+    documentos: ['doc-arch-001'],
+    caso: 'caso-arch-mga',
+    grupo: 'grupo-centro',
+    acceso: 'publico',
+    modelo3d: true,
+    demo3d: 'cube',
+  },
+  {
+    id: 'evt-arch-masaya',
+    titulo: 'Arquitectura — Teatro de Masaya (prototipo 3D)',
+    tipo: 'arquitectura',
+    fecha: '2021-11-22',
+    coordenadas: { lon: -86.094, lat: 11.974 },
+    lugar: 'Masaya, Nicaragua',
+    certeza: 'verificado',
+    descripcion:
+      'Entidad arquitectónica en Masaya con escena 3D prototipo (cubo Three.js).',
+    personas: ['pers-arch-002'],
+    documentos: ['doc-arch-002'],
+    caso: 'caso-arch-msy',
+    grupo: 'grupo-centro',
+    acceso: 'publico',
+    modelo3d: true,
+    demo3d: 'cube',
+  },
+]
+
+const MOCK_EVENTOS = [...EVENTOS_ARQUITECTURA, ...generarMockEventos(100)]
 const MOCK_RELACIONES = generarMockRelaciones(MOCK_EVENTOS)
 
 // ─── Funciones de acceso a datos ─────────────────────────────────────────────
@@ -208,6 +257,14 @@ export async function fetchEventos() {
     grupo: e.metadata?.grupo?.[0]?.value || '',
     acceso: e.metadata?.acceso?.[0]?.value || 'restringido',
   })).filter(e => e.coordenadas)
+}
+
+/** Obtiene un evento por id (mock o API real) */
+export async function fetchEventoById(id) {
+  const eventos = await fetchEventos()
+  const evento = eventos.find(e => e.id === id)
+  if (!evento) throw new Error(`Entidad no encontrada: ${id}`)
+  return evento
 }
 
 /** Obtiene relaciones entre eventos */

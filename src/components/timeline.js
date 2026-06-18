@@ -36,6 +36,7 @@ export class Timeline {
           <span class="tl-title">Filtro temporal</span>
           <button class="tl-reset" id="tl-reset">Restablecer</button>
         </div>
+        <p class="tl-hint">Filtra por fechas · las capas se ajustan abajo</p>
         <div class="tl-labels">
           <span class="tl-date" id="tl-desde">${this._fmt(this.min)}</span>
           <span class="tl-sep">→</span>

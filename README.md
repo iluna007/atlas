@@ -1,8 +1,8 @@
 ﻿# Archivo Atlas
 
-Explorador espaciotemporal basado en mapa. Visualiza entidades georreferenciadas con filtros temporales y por categoría.
+Explorador espaciotemporal basado en mapa. Visualiza entidades georreferenciadas con filtros temporales, panel de detalle y escenas 3D colaborativas por entidad.
 
-**Stack:** Mapbox GL JS · Deck.gl · Vite · JavaScript (ES Modules)
+**Stack:** Mapbox GL JS · Deck.gl · React · Three.js · Supabase · Vite · JavaScript (ES Modules)
 
 ---
 
@@ -10,6 +10,7 @@ Explorador espaciotemporal basado en mapa. Visualiza entidades georreferenciadas
 
 - Node.js 18+
 - Token de Mapbox ([account.mapbox.com](https://account.mapbox.com))
+- Supabase (opcional, para colaboración multi-usuario en 3D)
 
 ---
 
@@ -20,7 +21,7 @@ npm install
 cp .env.example .env.local
 ```
 
-Edita `.env.local` y define al menos `VITE_MAPBOX_TOKEN`.
+Edita `.env.local` con al menos `VITE_MAPBOX_TOKEN`.
 
 ```bash
 npm run dev
@@ -32,23 +33,36 @@ Abre http://localhost:5173
 
 ## Scripts
 
-| Comando         | Descripción              |
-|-----------------|--------------------------|
-| `npm run dev`   | Servidor de desarrollo   |
-| `npm run build` | Build de producción      |
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
 | `npm run preview` | Vista previa del build |
 
 ---
 
 ## Variables de entorno
 
-| Variable            | Descripción                                      |
-|---------------------|--------------------------------------------------|
-| `VITE_MAPBOX_TOKEN` | Token público de Mapbox                          |
-| `VITE_UWAZI_URL`    | URL de instancia Uwazi, o `mock` para datos locales |
-| `VITE_UWAZI_TOKEN`  | JWT de Uwazi (solo si no usas `mock`)            |
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_MAPBOX_TOKEN` | Token público de Mapbox |
+| `VITE_UWAZI_URL` | URL de instancia Uwazi, o `mock` para datos locales |
+| `VITE_UWAZI_TOKEN` | JWT de Uwazi (solo si no usas `mock`) |
+| `VITE_SUPABASE_URL` | URL del proyecto Supabase (opcional) |
+| `VITE_SUPABASE_ANON_KEY` | Clave anon de Supabase (opcional) |
 
-El estilo del mapa se configura en `src/main.js` (`mapbox://styles/...`).
+El estilo del mapa se configura en `src/map/initMap.js`.
+
+---
+
+## Rutas
+
+| Ruta | Descripción |
+|------|-------------|
+| `/` | Mapa espaciotemporal (Vanilla JS + Deck.gl) |
+| `/entity/:id/3d` | Visor 3D colaborativo de una entidad |
+| `/login` | Inicio de sesión |
+| `/register` | Registro de usuario |
 
 ---
 
@@ -58,54 +72,50 @@ El estilo del mapa se configura en `src/main.js` (`mapbox://styles/...`).
 archivo-atlas/
 ├── index.html
 ├── vite.config.js
-├── .env.example
+├── supabase/schema.sql
+├── SUPABASE_SETUP.md
 └── src/
-    ├── main.js           # Entrada: mapa, estado, filtros
-    ├── api/
-    │   └── uwazi.js      # Fetch de datos (API o mock)
-    ├── layers/
-    │   └── events.js     # Capas Deck.gl
-    ├── components/
-    │   ├── timeline.js   # Filtro por rango de fechas
-    │   └── panel.js      # Panel lateral de detalle
-    └── styles/
-        └── main.css
+    ├── app/                 # Shell React (router, auth, visor 3D)
+    │   ├── main.jsx
+    │   ├── App.jsx
+    │   ├── pages/
+    │   ├── components/
+    │   ├── contexts/
+    │   └── lib/
+    ├── map/
+    │   └── initMap.js       # Mapa Mapbox + Deck.gl
+    ├── api/uwazi.js         # Datos (API o mock)
+    ├── layers/events.js     # Capas Deck.gl
+    ├── components/          # Timeline, panel del mapa
+    └── styles/main.css
 ```
 
 ---
 
-## Componentes
+## Componentes del mapa
 
-### `main.js`
-Orquesta la aplicación: carga datos, inicializa Mapbox + Deck.gl, conecta filtros y capas.
-
-### `api/uwazi.js`
-Capa de datos. En modo `mock` devuelve un dataset local; en producción consume la API de Uwazi y normaliza la respuesta a un esquema interno común.
-
-### `layers/events.js`
-Capas Deck.gl integradas con Mapbox:
-
-- **ScatterplotLayer** — puntos por entidad
-- **ArcLayer** — relaciones entre entidades (toggle)
-- **TextLayer** — etiquetas de lugar según zoom (toggle)
-
-### `components/timeline.js`
-Slider de rango de fechas con histograma de densidad. Emite el rango seleccionado al cambiar.
-
-### `components/panel.js`
-Panel lateral que muestra el detalle de una entidad al hacer click en el mapa.
+- **`map/initMap.js`** — Mapbox, Deck.gl, filtros y leyenda
+- **`api/uwazi.js`** — Fetch y normalización de entidades
+- **`layers/events.js`** — ScatterplotLayer, ArcLayer, TextLayer
+- **`components/timeline.js`** — Filtro por rango de fechas
+- **`components/panel.js`** — Detalle de entidad + enlace a escena 3D
 
 ---
 
-## Integración con Uwazi
+## Visor 3D colaborativo
 
-1. Configura `VITE_UWAZI_URL` y `VITE_UWAZI_TOKEN` en `.env.local`.
-2. Ajusta el mapeo de campos en `src/api/uwazi.js` según el esquema de tu instancia.
-3. Actualiza `TIPOS_EVENTO` con los valores de tu taxonomía.
+Inspirado en [mnemonic-model](https://github.com/iluna007/mnemonic-model), adaptado a entidades del archivo:
+
+- Carga de modelos Rhino (`.3dm`) con capas
+- Comentarios anclados en coordenadas 3D
+- Notas de texto y archivos adjuntos
+- Auth y persistencia con Supabase (o `localStorage` en dev)
+
+Setup de Supabase: ver [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
 ---
 
 ## Notas
 
-- `.env.local` está en `.gitignore`; no subas tokens al repositorio.
+- `.env.local` está en `.gitignore`.
 - Restringe el token de Mapbox por dominio en el dashboard de Mapbox.

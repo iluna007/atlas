@@ -10,7 +10,7 @@ import { colorPorTipo } from '../api/uwazi.js'
 /**
  * Capa principal de eventos — círculos coloreados por tipo
  */
-export function crearCapaEventos({ eventos, onHover, onClick, hoverId }) {
+export function crearCapaEventos({ eventos, onHover, onClick, hoverId, filterKey = '' }) {
   return new ScatterplotLayer({
     id: 'eventos',
     data: eventos,
@@ -23,7 +23,11 @@ export function crearCapaEventos({ eventos, onHover, onClick, hoverId }) {
     lineWidthMinPixels: 1,
 
     getPosition: d => [d.coordenadas.lon, d.coordenadas.lat],
-    getRadius: d => d.id === hoverId ? 900 : 600,
+    getRadius: d => {
+      if (d.id === hoverId) return 900
+      if (d.demo3d) return 750
+      return 600
+    },
     getFillColor: d => colorPorTipo(d.tipo, d.id === hoverId ? 255 : 210),
     getLineColor: d => colorPorTipo(d.tipo, 255),
     getLineWidth: d => d.id === hoverId ? 2 : 0.5,
@@ -32,9 +36,10 @@ export function crearCapaEventos({ eventos, onHover, onClick, hoverId }) {
     onClick: ({ object }) => object && onClick(object),
 
     updateTriggers: {
-      getRadius: hoverId,
-      getFillColor: hoverId,
-      getLineColor: hoverId,
+      getPosition: filterKey,
+      getRadius: [hoverId, filterKey],
+      getFillColor: [hoverId, filterKey],
+      getLineColor: filterKey,
       getLineWidth: hoverId,
     },
   })
@@ -43,11 +48,11 @@ export function crearCapaEventos({ eventos, onHover, onClick, hoverId }) {
 /**
  * Capa de relaciones — arcos entre eventos conectados
  */
-export function crearCapaRelaciones({ relaciones, eventosMap, visible }) {
+export function crearCapaRelaciones({ relaciones, eventosMap, idsVisibles, visible }) {
   if (!visible || !relaciones.length) return null
 
-  // Construye datos de arcos cruzando relaciones con coordenadas de eventos
   const arcos = relaciones
+    .filter(r => idsVisibles?.has(r.origen) && idsVisibles?.has(r.destino))
     .map(r => {
       const origen  = eventosMap.get(r.origen)
       const destino = eventosMap.get(r.destino)
